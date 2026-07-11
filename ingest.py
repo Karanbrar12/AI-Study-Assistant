@@ -7,28 +7,33 @@ from langchain_core._api.deprecation import LangChainDeprecationWarning
 # warnings.filterwarnings("ignore",category=LangChainDeprecationWarning)
 
 
-# file=input("Enter the filename->")
-# filename=file+".pdf"
-def ingest_pdf(filepath):
-    loader=PyMuPDFLoader(filepath)
-    documents=loader.load()
+import streamlit as st
 
-    
-    text_splitter=RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200
-    )
-
-    chunks=text_splitter.split_documents(documents)
-
-
-    embeddings=HuggingFaceEmbeddings(
+@st.cache_resource
+def load_embeddings():
+    return HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
 
 
-    vectordb=Chroma(persist_directory="BOT_DB",
-                              embedding_function=embeddings)
+def ingest_pdf(filepath):
+
+    loader = PyMuPDFLoader(filepath)
+    documents = loader.load()
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=200
+    )
+
+    chunks = text_splitter.split_documents(documents)
+
+    embeddings = load_embeddings()
+
+    vectordb = Chroma(
+        persist_directory="BOT_DB",
+        embedding_function=embeddings
+    )
 
     vectordb.add_documents(chunks)
     vectordb.persist()

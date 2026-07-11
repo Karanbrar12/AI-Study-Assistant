@@ -7,25 +7,43 @@ from langchain_huggingface import ChatHuggingFace,HuggingFaceEndpoint
 import os
 from langchain_core.messages import HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
+import streamlit as st
 warnings.filterwarnings("ignore",category=LangChainDeprecationWarning)
-embeddings=HuggingFaceEmbeddings(
+
+
+
+
+@st.cache_resource
+def load_embeddings():
+    return HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
+# @st.cache_resource
+# def load_vectordb():
+#     return Chroma(persist_directory="BOT_DB",
+#                   embedding_function=load_embeddings())
 
-vectordb=Chroma(persist_directory="BOT_DB",
-                embedding_function=embeddings)
+# vectordb=load_vectordb()
 
 chat_history=""
-llm = ChatGoogleGenerativeAI(
+@st.cache_resource
+def load_llm():
+    return ChatGoogleGenerativeAI(
     model="gemini-2.5-flash-lite",  
     google_api_key="API_KEY",
     temperature=0.3,
 )
+
+llm=load_llm()
 def ask_ai(query, mode="ask"):
 
-    docs=vectordb.similarity_search(query,k=2)
-    context="\n\n".join([doc.page_content for doc in docs])
+    vectordb = Chroma(
+        persist_directory="BOT_DB",
+        embedding_function=load_embeddings()
+    )
 
+    docs = vectordb.similarity_search(query, k=2)
+    context = "\n\n".join(doc.page_content for doc in docs)
     if mode=="summary":
 
         prompt=f"""

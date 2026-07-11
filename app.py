@@ -15,12 +15,16 @@ Features:
 - Create quizzes
 - Generate flashcards
 """)
-audio=st.audio_input("Please say your query")
+
 with st.sidebar:
 
     st.header("Settings")
 
-    uploaded_file = st.file_uploader("Upload Study PDF", type="pdf")
+    uploaded_files = st.file_uploader(
+    "Upload Study PDFs",
+    type="pdf",
+    accept_multiple_files=True
+    )
     
     mode = st.selectbox(
         "Study Tool",
@@ -29,17 +33,20 @@ with st.sidebar:
 
     if st.button("Clear Chat"):
         st.session_state.messages = []
+        st.session_state.indexed_file=None
         st.rerun()
+if "index_file" not in st.session_state:
+    st.session_state.indexed_file=None
+if uploaded_files:
 
-if uploaded_file:
+    for uploaded_file in uploaded_files:
 
-    with open("temp.pdf", "wb") as f:
-        f.write(uploaded_file.read())
+        with open(uploaded_file.name, "wb") as f:
+            f.write(uploaded_file.read())
 
-    ingest_pdf("temp.pdf")
+        ingest_pdf(uploaded_file.name)
 
-    st.success("PDF successfully indexed")
-
+    st.success(f"{len(uploaded_files)} PDF(s) indexed successfully.")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
